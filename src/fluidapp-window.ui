@@ -1,0 +1,89 @@
+<interface>
+  <template class="FluidappWindow" parent="GtkApplicationWindow">
+    <property name="default-width">600</property>
+    <property name="default-height">512</property>
+    <child>
+      <object class="GtkBox">
+        <property name="name">hbox</property>
+        <property name="hexpand">1</property>
+        <property name="vexpand">1</property>
+        <property name="spacing">5</property>
+        <child>
+          <object class="GtkAspectFrame">
+            <child>
+              <object class="GtkPicture" id="scene">
+                <property name="name">scene</property>
+                <!-- Picture property: -->
+                <property name="can-shrink">0</property>
+                <property name="hexpand">1</property>
+                <property name="vexpand">1</property>
+                <!-- Image property: -->
+                <!--<property name="icon-name">applications-multimedia</property>-->
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">5</property>
+            <property name="margin-end">5</property>
+            <property name="margin-start">5</property>
+            <property name="margin-top">5</property>
+            <property name="name">vbox</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">5</property>
+            <child>
+              <object class="GtkButton">
+                <property name="label" translatable="1">button</property>
+                <property name="focusable">1</property>
+                <property name="receives-default">1</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry">
+                <property name="name">input</property>
+                <property name="focusable">1</property>
+                <property name="tooltip-text" translatable="1">Input</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="label" translatable="1">button</property>
+                <property name="focusable">1</property>
+                <property name="receives-default">1</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="homogeneous">1</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Autoink</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSwitch" id="autoink">
+                    <property name="active">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <object class="GtkHeaderBar" id="header_bar">
+        <property name="visible">1</property>
+        <child type="end">
+          <object class="GtkMenuButton">
+            <property name="visible">0</property>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

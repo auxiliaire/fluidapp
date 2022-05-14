@@ -1,0 +1,7 @@
+data/de.teamaux.Fluidapp.desktop.in
+data/de.teamaux.Fluidapp.appdata.xml.in
+data/de.teamaux.Fluidapp.gschema.xml
+src/fluidapp-window.ui
+src/main.c
+src/fluidapp-window.c
+

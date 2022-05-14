@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=fluidapp
+Exec=fluidapp
+Icon=de.teamaux.Fluidapp
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true
