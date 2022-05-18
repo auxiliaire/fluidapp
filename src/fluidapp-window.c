@@ -18,17 +18,11 @@
 
 #include "fluidapp-config.h"
 #include "fluidapp-window.h"
-#include "libfluid.h"
+#include "fluidapp-window-state.h"
 
-#define DEFAULT_SIZE      512
-#define DEFAULT_DIFFUSION 0.0
-#define DEFAULT_VISCOSITY 0.0
-#define DEFAULT_ANGLE     0.0
-#define DEFAULT_DELTA_X   3
-#define DEFAULT_DELTA_Y   1
-#define DEFAULT_DELTA_T   0.5
-#define BITS_PER_SAMPLE   8
-#define FILL_COLOR        0x000000ff
+#define OVERDRIVE_FACTOR 996.09375 /* 255.0 * 3.90625 */
+
+typedef guchar (*ColorFunction)(double, double);
 
 struct _FluidappWindow
 {
@@ -37,21 +31,16 @@ struct _FluidappWindow
   /* Template widgets */
   GtkHeaderBar        *header_bar;
   GtkPicture          *scene;
-  guint                dimension;
-  float                diffusion;
-  float                viscosity;
-  float                angle;
-  FluidSurface        *fluid;
   GdkPixbuf           *pixbuf;
-  gint64               t;
-  guint                cx;
-  guint                cy;
-  int                  dx;
-  int                  dy;
-  float                dt;
-  double               px;
-  double               py;
+  GtkToggleButton     *play_button;
+  GtkColorButton      *color_button;
+  GtkSwitch           *overdrive;
+  GdkRGBA             *color;
+  ColorFunction       as_color;
   GtkSwitch           *autoink;
+  GtkScale            *time_scale;
+  GtkScale            *vector_scale;
+  FluidappWindowState *state;
 };
 
 G_DEFINE_TYPE (FluidappWindow, fluidapp_window, GTK_TYPE_APPLICATION_WINDOW)
@@ -64,15 +53,12 @@ fluidapp_window_class_init (FluidappWindowClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class, "/de/teamaux/Fluidapp/fluidapp-window.ui");
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, header_bar);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, scene);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, play_button);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, color_button);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, overdrive);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, autoink);
-}
-
-inline static int
-is_point_in_circle (int x,
-		                int y,
-		                int r)
-{
-    return (x * x + y * y - r * r) <= 0;
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, time_scale);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, vector_scale);
 }
 
 inline static int
@@ -105,59 +91,32 @@ to_orig_y (double original_height,
 }
 
 static void
-add_drop (FluidappWindow *self, int centerX, int centerY)
+set_color (GtkColorButton *button,
+           gpointer        data)
 {
-  // cx = (int) (dimension / 2.0);
-  // cy = (int) (dimension / 2.0); // - 10; // (int) (dimension / 2.0);
-  if (centerX - 10 < 0
-      || centerX + 10 > (int) self->dimension
-      || centerY - 10 < 0
-      || centerY + 10 > (int) self->dimension)
-    return;
-
-  float lower = 5; // 50;
-  float upper = 15; // 150;
-  float vector_scale = 0.1; // 0.35;
-  // float angle;
-  // float v;
-  float s;
-  for (int i = -10; i <= 10; i++)
-    {
-      // g_print("--------------\n");
-      for (int j = -10; j <= 10; j++)
-	      {
-	        // angle = (4.5 * j - 90) * (M_PI / 180.0); // j / (2 * M_PI);
-	        // g_print("angle = %f\n", angle);
-          // g_printf ("%d, %d\n", cx+i, cy+j);
-          if (is_point_in_circle(j, i, 10))
-	          {
-              f_surface_add_density (self->fluid, centerX + j, centerY + i, (rand() / (upper - lower + 1)) + lower);
-	            // FluidSurfaceAddVelocity(fluid, cx + j, cy + i, cos(angle) * vector_scale, sin(angle) * vector_scale);
-	            s = sqrt(j * j + i * i);
-	            if (s > 0)
-		            {
-	                f_surface_add_velocity (self->fluid,
-					        centerX + j,
-					        centerY + i,
-					        -i / s * vector_scale,
-					        j / s * vector_scale);
-                }
-	          }
-	      }
-    }
+  FluidappWindow *self = (FluidappWindow*) data;
+  gtk_color_chooser_get_rgba (GTK_COLOR_CHOOSER (button), self->color);
 }
 
 static void
-add_drop_rel (FluidappWindow *self, double center_x, double center_y)
+add_drop_rel (FluidappWindow *self,
+              double          center_x,
+              double          center_y,
+              guint           modifier)
 {
   GdkRectangle a = { .x = 0, .y = 0, .width = 0, .height = 0 };
   gtk_widget_get_allocation (GTK_WIDGET (self->scene), &a);
   /* g_print ("x: %d, y: %d, w: %d, h: %d, cx: %f, cy: %f\n", */
   /*          a.x, a.y, a.width, a.height, center_x, center_y); */
 
-  add_drop (self,
-            to_orig_x (self->dimension, a.width, center_x),
-            to_orig_y (self->dimension, a.height, center_y));
+  fluidapp_window_state_add_drop (self->state,
+                                  to_orig_x (self->state->dimension,
+                                             a.width,
+                                             center_x),
+                                  to_orig_y (self->state->dimension,
+                                             a.height,
+                                             center_y),
+                                  modifier);
 }
 
 static gboolean
@@ -166,10 +125,12 @@ drag_begin (GtkGestureDrag *gesture,
             double          y,
             FluidappWindow *self)
 {
-  self->px = x;
-  self->py = y;
+  guint button = gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
 
-  add_drop_rel (self, x, y);
+  self->state->px = x;
+  self->state->py = y;
+
+  add_drop_rel (self, x, y, button);
 
   return TRUE; // handled
 }
@@ -180,106 +141,161 @@ drag_update (GtkGestureDrag *gesture,
              double          y,
              FluidappWindow *self)
 {
-  add_drop_rel (self, self->px + x, self->py + y);
+  guint button = gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
+
+  add_drop_rel (self, self->state->px + x, self->state->py + y, button);
 
   return TRUE;
 }
 
 static void
+put_pixel (GdkPixbuf *pixbuf,
+           int x,
+           int y,
+           guchar red,
+           guchar green,
+           guchar blue,
+           guchar alpha)
+{
+  int n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+
+  // Ensure that the pixbuf is valid
+  g_assert (gdk_pixbuf_get_colorspace (pixbuf) == GDK_COLORSPACE_RGB);
+  g_assert (gdk_pixbuf_get_bits_per_sample (pixbuf) == 8);
+  g_assert (gdk_pixbuf_get_has_alpha (pixbuf));
+  g_assert (n_channels == 4);
+
+  int width = gdk_pixbuf_get_width (pixbuf);
+  int height = gdk_pixbuf_get_height (pixbuf);
+
+  // Ensure that the coordinates are in a valid range
+  g_assert (x >= 0 && x < width);
+  g_assert (y >= 0 && y < height);
+
+  int rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+
+  // The pixel buffer in the GdkPixbuf instance
+  guchar *pixels = gdk_pixbuf_get_pixels (pixbuf);
+
+  // The pixel we wish to modify
+  guchar *p = pixels + y * rowstride + x * n_channels;
+  p[0] = red;
+  p[1] = green;
+  p[2] = blue;
+  p[3] = alpha;
+}
+
+static inline guchar
+capped_color (double density, double color)
+{
+  return (guchar) (density * color * 255.0) % 256;
+}
+
+static inline guchar
+overdrive_color (double density, double color)
+{
+  return (guchar) (color * density * OVERDRIVE_FACTOR) % 256;
+}
+
+static void
 render (FluidappWindow *self)
 {
-  GdkPixbuf *pixbuf_new = gdk_pixbuf_new (
-		GDK_COLORSPACE_RGB,
-		FALSE,
-		BITS_PER_SAMPLE,
-		self->dimension,
-		self->dimension
-	);
   /* if (self->pixbuf == NULL) */
   /*   return; */
-  int rowstride = gdk_pixbuf_get_rowstride (pixbuf_new);
-  int n_channels = gdk_pixbuf_get_n_channels (pixbuf_new);
-  guchar *pixels = gdk_pixbuf_get_pixels (pixbuf_new);
+  // int rowstride = gdk_pixbuf_get_rowstride (pixbuf_new);
+  // int n_channels = gdk_pixbuf_get_n_channels (pixbuf_new);
+  // guchar *pixels = gdk_pixbuf_get_pixels (pixbuf_new);
 
-  for (guint i = 0; i < self->dimension; i++)
+  for (guint i = 0; i < self->state->dimension; i++)
     {
-      for (guint j = 0; j < self->dimension; j++)
+      for (guint j = 0; j < self->state->dimension; j++)
         {
-	        float d = f_surface_get_density (self->fluid, j, i) / 10000000;
+	        double d = f_surface_get_density (self->state->fluid, j, i);
 	        //if (d > 500) {
 	        //	g_print ("d = %f\n", d);
 	        //}
-	        int r = (int) (3 * d / 3.90625) % 256;
-	        int g = (int) (2 * d / 3.90625) % 256;
-	        int b = (int) (1 * d / 3.90625) % 256;
+	        //guchar r = (guchar) (3 * d / 3.90625) % 256;
+	        //guchar g = (guchar) (2 * d / 3.90625) % 256;
+	        //guchar b = (guchar) (1 * d / 3.90625) % 256;
 
-          guchar *p = pixels + i * rowstride + j * n_channels;
+          //guchar *p = pixels + i * rowstride + j * n_channels;
           // RGB:
-          p[0] = (int) (r > 255 ? 255 : r); // ((2 * d) / 256; // 0;
-          p[1] = (int) (g > 255 ? 255 : g); // (int) d % 255;
-          p[2] = (int) (b > 255 ? 255 : b); // (int)(d / 2) % 255; // (int) (d / 2) % 255; // (int)(d + 50) % 255;
-          p[3] = 255;
+          //p[0] = r; // (int) (r > 255 ? 255 : r); // ((2 * d) / 256; // 0;
+          //p[1] = g; // (int) (g > 255 ? 255 : g); // (int) d % 255;
+          //p[2] = b; // (int) (b > 255 ? 255 : b); // (int)(d / 2) % 255; // (int) (d / 2) % 255; // (int)(d + 50) % 255;
+          //p[3] = 255;
+          put_pixel (self->pixbuf,
+                     j,
+                     i,
+                     self->as_color (d, self->color->red), //(guchar) (3 * d / 3.90625) % 256,
+                     self->as_color (d, self->color->green), //(guchar) (2 * d / 3.90625) % 256,
+                     self->as_color (d, self->color->blue), //(guchar) (1 * d / 3.90625) % 256,
+                     255);
         }
     }
-  gtk_picture_set_pixbuf (self->scene, pixbuf_new);
+  gtk_picture_set_pixbuf (self->scene, self->pixbuf);
 
   //free (self->pixbuf);
   //self->pixbuf = pixbuf_new;
 }
 
 static gboolean
-tick_callback (GtkWidget *widget, GdkFrameClock *frame_clock, gpointer data)
+tick (GtkWidget *widget, GdkFrameClock *frame_clock, gpointer data)
 {
   FluidappWindow *self = (FluidappWindow*) data;
+  FluidappWindowState *state = self->state;
 
   gint64 time = gdk_frame_clock_get_frame_time (frame_clock);
 
-  if (self->t == 0)
-    self->dt = DEFAULT_DELTA_T;
+  if (state->t == 0)
+    state->dt = DEFAULT_DELTA_T;
   else
-    self->dt = (time - self->t) / 500000.0;
+    state->dt = (time - state->t) * state->time_factor;
 
-  self->t = time;
+  state->t = time;
 
-  if (gtk_switch_get_active (self->autoink))
+  if (gtk_toggle_button_get_active (self->play_button))
     {
-      add_drop (self, self->cx, self->cy);
-      //float noize;
-      //float vector_scale = -1.2;
-      //noize = angle_noise(t) / M_PI;
-      // angle = angle_random(0.0); // noise(t) * M_2_PI * 2;
-      //angle = - noize; // angle_noise(t); // angle_random(-1.0); // angle_const(M_PI); // angle_rotating(angle);
-      //for (int i = -10; i < 10; i++) {
-       //vector_scale = noize * M_PI; // / (M_PI);
-        // g_printf ("%f\n", angle);
-          // PVector v = PVector.fromAngle(angle);
-          // v.mult(0.2);
-      // FluidSurfaceAddVelocity(fluid, cx + i, cy, cos(angle) * vector_scale, sin(angle) * vector_scale);
-      // fluid.addVelocity(cx, cy, v.x, v.y );
-      //}
-      self->cx += self->dx;
-      if ((self->cx + 10) >= self->dimension)
+      if (gtk_switch_get_active (self->autoink))
         {
-    	    self->dx = -self->dx;
+          fluidapp_window_state_add_drop (state, state->cx, state->cy, 1);
+          //double noize;
+          //double vector_scale = -1.2;
+          //noize = angle_noise(t) / M_PI;
+          // angle = angle_random(0.0); // noise(t) * M_2_PI * 2;
+          //angle = - noize; // angle_noise(t); // angle_random(-1.0); // angle_const(M_PI); // angle_rotating(angle);
+          //for (int i = -10; i < 10; i++) {
+           //vector_scale = noize * M_PI; // / (M_PI);
+            // g_printf ("%f\n", angle);
+              // PVector v = PVector.fromAngle(angle);
+              // v.mult(0.2);
+          // FluidSurfaceAddVelocity(fluid, cx + i, cy, cos(angle) * vector_scale, sin(angle) * vector_scale);
+          // fluid.addVelocity(cx, cy, v.x, v.y );
+          //}
+          state->cx += state->dx;
+          if ((state->cx + 10) >= state->dimension - 1)
+            {
+        	    state->dx = -state->dx;
+            }
+          if ((state->cx - 10) <= 1)
+            {
+        	    state->dx = -state->dx;
+            }
+          state->cy += state->dy;
+          if ((state->cy + 10) >= state->dimension - 1)
+            {
+        	    state->dy = -state->dy;
+            }
+          if ((state->cy - 10) <= 1)
+        	  {
+              state->dy = -state->dy;
+            }
+          // g_print ("cx: %d, cy: %d, dx: %d, dy: %d\n", cx, cy, dx, dy);
         }
-      if ((self->cx - 10) <= 0)
-        {
-    	    self->dx = -self->dx;
-        }
-      self->cy += self->dy;
-      if ((self->cy + 10) >= self->dimension)
-        {
-    	    self->dy = -self->dy;
-        }
-      if ((self->cy - 10) <= 0)
-    	  {
-          self->dy = -self->dy;
-        }
-      // g_print ("cx: %d, cy: %d, dx: %d, dy: %d\n", cx, cy, dx, dy);
-    }
 
-  // g_print ("%f\n", self->dt);
-  f_surface_step (self->fluid, self->dt);
+      // g_print ("%f\n", self->dt);
+      f_surface_step (state->fluid, state->dt);
+    }
 
   render (self);
 
@@ -287,50 +303,112 @@ tick_callback (GtkWidget *widget, GdkFrameClock *frame_clock, gpointer data)
 }
 
 static void
-tick_callback_destroy_notify_callback (gpointer data)
+tick_destroy_notify (gpointer data)
 {
   FluidappWindow *self = (FluidappWindow*) data;
 
-  f_surface_free (self->fluid);
+  g_object_unref (self->pixbuf);
+  g_free (self->color);
+  fluidapp_window_state_free (self->state);
   g_print ("Destroy\n");
+}
+
+static void
+play_toggle (GtkToggleButton *button, gpointer data)
+{
+  if (gtk_toggle_button_get_active (button))
+    gtk_button_set_icon_name (GTK_BUTTON (button), "media-playback-pause");
+  else
+    gtk_button_set_icon_name (GTK_BUTTON (button), "media-playback-start");
+}
+
+static gboolean
+toggle_overdrive (GtkSwitch* sw,
+                  gboolean state,
+                  gpointer user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+
+  if (state)
+    self->as_color = overdrive_color;
+  else
+    self->as_color = capped_color;
+
+  return FALSE;
+}
+
+static void
+time_scale_change (GtkRange* range,
+                   gpointer user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+  GtkAdjustment *adjustment = gtk_range_get_adjustment (range);
+  self->state->time_factor = gtk_adjustment_get_value (adjustment);
+}
+
+static void
+vector_scale_change (GtkRange* range,
+                     gpointer user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+  GtkAdjustment *adjustment = gtk_range_get_adjustment (range);
+  self->state->vector_scale = gtk_adjustment_get_value (adjustment);
 }
 
 static void
 fluidapp_window_init (FluidappWindow *self)
 {
+  /* Initializing the random number generator */
+  time_t t;
+  srand((unsigned) time(&t));
+
+  self->color = g_malloc (sizeof (GdkRGBA));
+  gdk_rgba_parse (self->color, "rgba(255,255,255,1.0)");
+
+  self->as_color = capped_color;
+
   GtkGesture *drag;
   gtk_widget_init_template (GTK_WIDGET (self));
-  self->dimension = DEFAULT_SIZE;
-  self->diffusion = DEFAULT_DIFFUSION;
-  self->viscosity = DEFAULT_VISCOSITY;
-  self->angle     = DEFAULT_ANGLE;
-  self->cx        = (int) (self->dimension / 4.0);
-  self->cy        = (int) (self->dimension / 4.0);
-  self->dx        = DEFAULT_DELTA_X;
-  self->dy        = DEFAULT_DELTA_Y;
-  self->t         = 0;
-  self->fluid     = f_surface_create (self->dimension,
-                                      self->diffusion,
-                                      self->viscosity,
-                                      DEFAULT_DELTA_T);
-  self->pixbuf    = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
-                                    FALSE,
-                                    BITS_PER_SAMPLE,
-                                    self->dimension,
-                                    self->dimension);
+  self->state  = fluidapp_window_state_create ();
+  self->pixbuf = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
+                                 TRUE,
+                                 BITS_PER_SAMPLE,
+                                 self->state->dimension,
+                                 self->state->dimension);
   gdk_pixbuf_fill (self->pixbuf, FILL_COLOR);
 
   gtk_picture_set_pixbuf (self->scene, self->pixbuf);
 
   gtk_widget_add_tick_callback (GTK_WIDGET (self->scene),
-                                tick_callback,
+                                tick,
                                 self,
-                                tick_callback_destroy_notify_callback);
+                                tick_destroy_notify);
 
   drag = gtk_gesture_drag_new ();
-  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (drag), GDK_BUTTON_PRIMARY);
+  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (drag), 0);
   gtk_widget_add_controller (GTK_WIDGET (self->scene),
                              GTK_EVENT_CONTROLLER (drag));
+
+  g_signal_connect (self->color_button,
+                    "color-set",
+                    G_CALLBACK (set_color),
+                    self);
+  g_signal_connect (self->play_button,
+                    "toggled",
+                    G_CALLBACK (play_toggle),
+                    self);
+  g_signal_connect (self->overdrive,
+                    "state-set",
+                    G_CALLBACK (toggle_overdrive),
+                    self);
+  g_signal_connect (self->time_scale,
+                    "value-changed",
+                    G_CALLBACK (time_scale_change),
+                    self);
+  g_signal_connect (self->vector_scale,
+                    "value-changed",
+                    G_CALLBACK (vector_scale_change),
+                    self);
   g_signal_connect (drag,
 			              "drag-begin",
 			              G_CALLBACK (drag_begin),
@@ -343,5 +421,4 @@ fluidapp_window_init (FluidappWindow *self)
 			              "drag-end",
 			              G_CALLBACK (drag_update),
 			              self);
-
 }

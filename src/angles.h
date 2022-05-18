@@ -2,12 +2,12 @@
 
 #define F_ANGLES_H
 
-float angle_const    (float prev_angle);
+double angle_const    (double prev_angle);
 
-float angle_random   (float prev_angle);
+double angle_random   (double prev_angle);
 
-float angle_rotating (float prev_angle);
+double angle_rotating (double prev_angle);
 
-float angle_noise    (float prev_angle);
+double angle_noise    (double prev_angle);
 
 #endif

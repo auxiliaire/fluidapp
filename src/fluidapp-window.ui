@@ -30,11 +30,12 @@
             <property name="margin-start">5</property>
             <property name="margin-top">5</property>
             <property name="name">vbox</property>
-            <property name="orientation">vertical</property>
+            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
             <property name="spacing">5</property>
             <child>
-              <object class="GtkButton">
-                <property name="label" translatable="1">button</property>
+              <object class="GtkToggleButton" id="play_button">
+                <property name="icon-name">media-playback-start</property>
+                <property name="active">0</property>
                 <property name="focusable">1</property>
                 <property name="receives-default">1</property>
               </object>
@@ -46,24 +47,102 @@
                 <property name="tooltip-text" translatable="1">Input</property>
               </object>
             </child>
+            <!-- INK COLOR -->
             <child>
-              <object class="GtkButton">
-                <property name="label" translatable="1">button</property>
-                <property name="focusable">1</property>
-                <property name="receives-default">1</property>
+              <object class="GtkBox">
+                <property name="homogeneous">1</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Ink color</property>
+                    <property name="xalign">0.0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkColorButton" id="color_button">
+                    <property name="focusable">1</property>
+                    <property name="receives-default">1</property>
+                  </object>
+                </child>
               </object>
             </child>
+            <!-- COLOR OVERDRIVE -->
+            <child>
+              <object class="GtkBox">
+                <property name="homogeneous">1</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Color overdrive</property>
+                    <property name="xalign">0.0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSwitch" id="overdrive">
+                    <property name="active">0</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <!-- AUTOINK -->
             <child>
               <object class="GtkBox">
                 <property name="homogeneous">1</property>
                 <child>
                   <object class="GtkLabel">
                     <property name="label" translatable="yes">Autoink</property>
+                    <property name="xalign">0.0</property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkSwitch" id="autoink">
                     <property name="active">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <!-- TIME SCALE -->
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Time scale</property>
+                    <property name="xalign">0.0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScale" id="time_scale">
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="lower">0.0000005</property>
+                        <property name="upper">0.00001</property>
+                        <property name="value">0.000002</property>
+                      </object>
+                    </property>
+                    <property name="hexpand">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <!-- VECTOR SCALE -->
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Vector scale</property>
+                    <property name="xalign">0.0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScale" id="vector_scale">
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="lower">0.005</property>
+                        <property name="upper">0.2</property>
+                        <property name="value">0.10</property>
+                      </object>
+                    </property>
+                    <property name="hexpand">1</property>
                   </object>
                 </child>
               </object>
@@ -75,6 +154,17 @@
     <child type="titlebar">
       <object class="GtkHeaderBar" id="header_bar">
         <property name="visible">1</property>
+        <property name="title-widget">
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Fluid App</property>
+            <property name="single-line-mode">True</property>
+            <property name="ellipsize">end</property>
+            <property name="width-chars">5</property>
+            <style>
+              <class name="title"/>
+            </style>
+          </object>
+        </property>
         <child type="end">
           <object class="GtkMenuButton">
             <property name="visible">0</property>

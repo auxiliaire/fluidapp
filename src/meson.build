@@ -1,8 +1,9 @@
 fluidapp_sources = [
-  'main.c',
-  'fluidapp-window.c',
-    'fluidapp-application.c',
-    'libfluid.c',
+  	'main.c',
+	'fluidapp-window.c',
+	'fluidapp-window-state.c',
+    	'fluidapp-application.c',
+    	'libfluid.c',
   ]
 
 cc = meson.get_compiler('c')
