@@ -19,6 +19,8 @@ configure_file(
 add_project_arguments([
   '-I' + meson.build_root(),
   '-O3',
+  '-ffast-math',
+  '-march=native',
 ], language: 'c')
 
 

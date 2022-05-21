@@ -41,10 +41,10 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry">
-                <property name="name">input</property>
+              <object class="GtkButton" id="save_button">
+                <property name="icon-name">document-save</property>
                 <property name="focusable">1</property>
-                <property name="tooltip-text" translatable="1">Input</property>
+                <property name="tooltip-text" translatable="1">Save image</property>
               </object>
             </child>
             <!-- INK COLOR -->
@@ -61,6 +61,7 @@
                   <object class="GtkColorButton" id="color_button">
                     <property name="focusable">1</property>
                     <property name="receives-default">1</property>
+                    <property name="margin-start">25</property>
                   </object>
                 </child>
               </object>
@@ -78,6 +79,7 @@
                 <child>
                   <object class="GtkSwitch" id="overdrive">
                     <property name="active">0</property>
+                    <property name="margin-start">25</property>
                   </object>
                 </child>
               </object>
@@ -95,6 +97,31 @@
                 <child>
                   <object class="GtkSwitch" id="autoink">
                     <property name="active">1</property>
+                    <property name="margin-start">25</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <!-- INK DENSITY -->
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Ink density</property>
+                    <property name="xalign">0.0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScale" id="ink_density">
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="lower">1</property>
+                        <property name="upper">95</property>
+                        <property name="value">15</property>
+                      </object>
+                    </property>
+                    <property name="hexpand">1</property>
                   </object>
                 </child>
               </object>

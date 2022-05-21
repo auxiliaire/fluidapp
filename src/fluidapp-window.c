@@ -33,6 +33,7 @@ struct _FluidappWindow
   GtkPicture          *scene;
   GdkPixbuf           *pixbuf;
   GtkToggleButton     *play_button;
+  GtkButton           *save_button;
   GtkColorButton      *color_button;
   GtkSwitch           *overdrive;
   GdkRGBA             *color;
@@ -40,6 +41,7 @@ struct _FluidappWindow
   GtkSwitch           *autoink;
   GtkScale            *time_scale;
   GtkScale            *vector_scale;
+  GtkScale            *ink_density;
   FluidappWindowState *state;
 };
 
@@ -54,11 +56,13 @@ fluidapp_window_class_init (FluidappWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, header_bar);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, scene);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, play_button);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, save_button);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, color_button);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, overdrive);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, autoink);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, time_scale);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, vector_scale);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, ink_density);
 }
 
 inline static int
@@ -109,6 +113,9 @@ add_drop_rel (FluidappWindow *self,
   /* g_print ("x: %d, y: %d, w: %d, h: %d, cx: %f, cy: %f\n", */
   /*          a.x, a.y, a.width, a.height, center_x, center_y); */
 
+  GtkAdjustment *adjustment = gtk_range_get_adjustment (GTK_RANGE (self->ink_density));
+  int density_hint = gtk_adjustment_get_value (adjustment);
+
   fluidapp_window_state_add_drop (self->state,
                                   to_orig_x (self->state->dimension,
                                              a.width,
@@ -116,6 +123,7 @@ add_drop_rel (FluidappWindow *self,
                                   to_orig_y (self->state->dimension,
                                              a.height,
                                              center_y),
+                                  density_hint,
                                   modifier);
 }
 
@@ -258,7 +266,10 @@ tick (GtkWidget *widget, GdkFrameClock *frame_clock, gpointer data)
     {
       if (gtk_switch_get_active (self->autoink))
         {
-          fluidapp_window_state_add_drop (state, state->cx, state->cy, 1);
+          GtkAdjustment *adjustment = gtk_range_get_adjustment (GTK_RANGE (self->ink_density));
+          int density_hint = gtk_adjustment_get_value (adjustment);
+
+          fluidapp_window_state_add_drop (state, state->cx, state->cy, density_hint, 1);
           //double noize;
           //double vector_scale = -1.2;
           //noize = angle_noise(t) / M_PI;
@@ -314,7 +325,7 @@ tick_destroy_notify (gpointer data)
 }
 
 static void
-play_toggle (GtkToggleButton *button, gpointer data)
+play_toggle (GtkToggleButton *button)
 {
   if (gtk_toggle_button_get_active (button))
     gtk_button_set_icon_name (GTK_BUTTON (button), "media-playback-pause");
@@ -353,6 +364,68 @@ vector_scale_change (GtkRange* range,
   FluidappWindow *self = (FluidappWindow*) user_data;
   GtkAdjustment *adjustment = gtk_range_get_adjustment (range);
   self->state->vector_scale = gtk_adjustment_get_value (adjustment);
+}
+
+static void
+on_save_response (GtkNativeDialog *native,
+                  int        response,
+                  gpointer   user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+
+  if (response == GTK_RESPONSE_ACCEPT)
+    {
+      GtkFileChooser *chooser = GTK_FILE_CHOOSER (native);
+
+      g_autoptr(GFile) file = gtk_file_chooser_get_file (chooser);
+
+      GError *error = NULL;
+
+      GFileOutputStream *out = g_file_create (file, G_FILE_CREATE_NONE, NULL, &error);
+      if (error == NULL)
+        {
+          // save_to_file (file);
+          gdk_pixbuf_save_to_stream (self->pixbuf, G_OUTPUT_STREAM (out), "jpeg", NULL, &error, "quality", "100", NULL);
+          if (error != NULL)
+            {
+              g_print ("%s\n", error->message);
+              g_error_free (error);
+            }
+        }
+      g_object_unref (G_OBJECT (out));
+      g_object_unref (G_OBJECT (file));
+    }
+
+  g_object_unref (native);
+}
+
+static void
+create_save_dialog (GtkButton *button,
+                    gpointer   user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+
+  gtk_toggle_button_set_active (self->play_button, FALSE);
+
+  GtkFileChooserNative *native;
+  GtkFileChooser *chooser;
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+
+  native = gtk_file_chooser_native_new ("Save File",
+                                        GTK_WINDOW (&(self->parent_instance)),
+                                        action,
+                                        "_Save",
+                                        "_Cancel");
+  chooser = GTK_FILE_CHOOSER (native);
+
+  gtk_file_chooser_set_current_name (chooser, "untitled.jpg");
+
+  g_signal_connect (native,
+                    "response",
+                    G_CALLBACK (on_save_response),
+                    self);
+
+  gtk_native_dialog_show (GTK_NATIVE_DIALOG (native));
 }
 
 static void
@@ -396,6 +469,10 @@ fluidapp_window_init (FluidappWindow *self)
   g_signal_connect (self->play_button,
                     "toggled",
                     G_CALLBACK (play_toggle),
+                    self);
+  g_signal_connect (self->save_button,
+                    "clicked",
+                    G_CALLBACK (create_save_dialog),
                     self);
   g_signal_connect (self->overdrive,
                     "state-set",

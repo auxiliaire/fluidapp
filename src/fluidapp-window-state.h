@@ -45,6 +45,7 @@ void                 fluidapp_window_state_free     (FluidappWindowState *state)
 void                 fluidapp_window_state_add_drop (FluidappWindowState *state,
                                                      int                  centerX,
                                                      int                  centerY,
+                                                     int                  density_hint,
                                                      guint                modifier);
 
 G_END_DECLS

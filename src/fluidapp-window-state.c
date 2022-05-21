@@ -40,6 +40,7 @@ void
 fluidapp_window_state_add_drop (FluidappWindowState *state,
                                 int                  centerX,
                                 int                  centerY,
+                                int                  density_hint,
                                 guint                modifier)
 {
   // cx = (int) (dimension / 2.0);
@@ -51,8 +52,10 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
     return;
 
   int lower = 5; // 50;
-  int upper = 15; // 150;
+  int upper = density_hint; // 150;
+  int span = upper - lower + 1;
   double density;
+  double intensity;
   // double angle;
   // double v;
   double s;
@@ -66,8 +69,10 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
           // g_printf ("%d, %d\n", cx+i, cy+j);
           if (is_point_in_circle(j, i, 10))
 	          {
-              density = ((rand() % (upper - lower + 1)) + lower) / 100.0;
+              density = ((rand() % span) + lower) / 100.0;
               // g_print ("density = %f\n", density);
+              intensity = density / (upper / 100.0);
+              // g_print ("intensity = %f\n", intensity);
               if ((modifier == 1) || (modifier == 2))
                 f_surface_add_density (state->fluid, centerX + j, centerY + i, density);
 	            // FluidSurfaceAddVelocity(fluid, cx + j, cy + i, cos(angle) * vector_scale, sin(angle) * vector_scale);
@@ -78,8 +83,8 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
 	                  f_surface_add_velocity (state->fluid,
 					                                  centerX + j,
 					                                  centerY + i,
-					                                  j / s * state->vector_scale, // -i / s * state->vector_scale,
-					                                  i / s * state->vector_scale);  // j / s * state->vector_scale);
+					                                  j / s * state->vector_scale * intensity, // -i / s * state->vector_scale,
+					                                  i / s * state->vector_scale * intensity);  // j / s * state->vector_scale);
                 }
 	          }
 	      }
