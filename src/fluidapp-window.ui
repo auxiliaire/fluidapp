@@ -25,6 +25,7 @@
         </child>
         <child>
           <object class="GtkBox">
+            <property name="hexpand">0</property>
             <property name="margin-bottom">5</property>
             <property name="margin-end">5</property>
             <property name="margin-start">5</property>
@@ -32,21 +33,8 @@
             <property name="name">vbox</property>
             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
             <property name="spacing">5</property>
-            <child>
-              <object class="GtkToggleButton" id="play_button">
-                <property name="icon-name">media-playback-start</property>
-                <property name="active">0</property>
-                <property name="focusable">1</property>
-                <property name="receives-default">1</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="save_button">
-                <property name="icon-name">document-save</property>
-                <property name="focusable">1</property>
-                <property name="tooltip-text" translatable="1">Save image</property>
-              </object>
-            </child>
+            <!-- Play button -->
+            <!-- Save button -->
             <!-- INK COLOR -->
             <child>
               <object class="GtkBox">
@@ -192,6 +180,22 @@
             </style>
           </object>
         </property>
+        <child type="start">
+          <object class="GtkToggleButton" id="play_button">
+            <property name="icon-name">media-playback-start</property>
+            <property name="active">0</property>
+            <property name="focusable">1</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Start/pause simulation</property>
+          </object>
+        </child>
+        <child type="start">
+          <object class="GtkButton" id="save_button">
+            <property name="icon-name">document-save</property>
+            <property name="focusable">1</property>
+            <property name="tooltip-text" translatable="1">Save image</property>
+          </object>
+        </child>
         <child type="end">
           <object class="GtkMenuButton">
             <property name="visible">0</property>
