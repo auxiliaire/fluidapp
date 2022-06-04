@@ -43,6 +43,7 @@ struct _FluidappWindow
   GtkScale            *time_scale;
   GtkScale            *vector_scale;
   GtkScale            *ink_density;
+  GtkComboBoxText     *velocity_function;
   FluidappWindowState *state;
 };
 
@@ -65,6 +66,7 @@ fluidapp_window_class_init (FluidappWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, time_scale);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, vector_scale);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, ink_density);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, velocity_function);
 }
 
 static inline int
@@ -377,6 +379,18 @@ vector_scale_change (GtkRange* range,
 }
 
 static void
+velocity_function_change (GtkComboBoxText* combo_box,
+                          gpointer         user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+  const gchar *selection = gtk_combo_box_get_active_id (GTK_COMBO_BOX (combo_box));
+  char *ptr;
+  VelocityFunction fn = get_velocity_function (strtol (selection, &ptr, 10));
+  if (fn != NULL)
+    self->state->velocity_function = fn;
+}
+
+static void
 on_save_response (GtkNativeDialog *native,
                   int        response,
                   gpointer   user_data)
@@ -499,6 +513,10 @@ fluidapp_window_init (FluidappWindow *self)
   g_signal_connect (self->vector_scale,
                     "value-changed",
                     G_CALLBACK (vector_scale_change),
+                    self);
+  g_signal_connect (self->velocity_function,
+                    "changed",
+                    G_CALLBACK (velocity_function_change),
                     self);
   g_signal_connect (drag,
 			              "drag-begin",

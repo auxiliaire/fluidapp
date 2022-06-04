@@ -10,9 +10,13 @@ Screenshot of the application running on linux:
 
 ![Screenshot Linux](https://raw.githubusercontent.com/auxiliaire/fluidapp/master/gallery/app_window_20220521_134100.png)
 
+![Screenshot Linux](https://raw.githubusercontent.com/auxiliaire/fluidapp/master/gallery/app_window_20220604_181335.png)
+
 Random state of the field exported from the app itself:
 
 ![Screenshot Linux](https://raw.githubusercontent.com/auxiliaire/fluidapp/master/gallery/sample.jpg)
+
+See gallery for more pictures.
 
 ## Development
 

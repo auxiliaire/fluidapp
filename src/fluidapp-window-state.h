@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 
 #include "libfluid.h"
+#include "velocity-function.h"
 
 G_BEGIN_DECLS
 
@@ -37,6 +38,7 @@ typedef struct _FluidappWindowState
   double              dt;
   double              px;
   double              py;
+  VelocityFunction    velocity_function;
 } FluidappWindowState;
 
 FluidappWindowState* fluidapp_window_state_create   ();

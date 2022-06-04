@@ -1,5 +1,6 @@
 #include "fluidapp-window-state.h"
 #include "libfluid.h"
+#include "velocity-function.h"
 
 FluidappWindowState* fluidapp_window_state_create ()
 {
@@ -18,6 +19,7 @@ FluidappWindowState* fluidapp_window_state_create ()
   state->fluid        = f_surface_create (state->dimension,
                                           state->diffusion,
                                           state->viscosity);
+  state->velocity_function = get_velocity_function (F_VELOCITY_RADIAL_FN);
   return state;
 }
 
@@ -58,7 +60,6 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
   double intensity;
   // double angle;
   // double v;
-  double s;
   for (int i = -10; i <= 10; i++)
     {
       // g_print("--------------\n");
@@ -76,17 +77,19 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
               if ((modifier == 1) || (modifier == 2))
                 f_surface_add_density (state->fluid, centerX + j, centerY + i, density);
 	            // FluidSurfaceAddVelocity(fluid, cx + j, cy + i, cos(angle) * vector_scale, sin(angle) * vector_scale);
-              if ((modifier == 1) || (modifier == 3))
-                {
-                  // Velocity function
-	                s = sqrt(j * j + i * i);
-	                if (s > 0)
-                    f_surface_add_velocity (state->fluid,
-			                                      centerX + j,
-			                                      centerY + i,
-			                                      j / s * state->vector_scale * intensity, // -i / s * state->vector_scale * intensity,
-			                                      i / s * state->vector_scale * intensity);  // j / s * state->vector_scale * intensity);
-                }
+              VelocityParam p = {
+                  .pos_x = j,
+                  .pos_y = i,
+                  .scale = state->vector_scale,
+                  .intensity = intensity
+                };
+              VectorComponent v = state->velocity_function (p);
+              if (((modifier == 1) || (modifier == 3)) && v.valid)
+                f_surface_add_velocity (state->fluid,
+	                                      centerX + j,
+	                                      centerY + i,
+	                                      v.x,
+	                                      v.y);
 	          }
 	      }
     }

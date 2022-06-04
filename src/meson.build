@@ -4,6 +4,7 @@ fluidapp_sources = [
 	'fluidapp-window-state.c',
     	'fluidapp-application.c',
     	'libfluid.c',
+    	'velocity-function.c',
   ]
 
 cc = meson.get_compiler('c')
