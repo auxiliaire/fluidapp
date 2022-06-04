@@ -280,6 +280,15 @@ f_surface_get_density (FluidSurface *surface,
 }
 
 void
+f_surface_set_density (FluidSurface *surface,
+		                   int           x,
+		                   int           y,
+                       double        amount)
+{
+  surface->density[ix(x, y)] = amount;
+}
+
+void
 f_surface_add_velocity (FluidSurface *surface,
 			                  int           x,
 			                  int           y,
@@ -293,9 +302,22 @@ f_surface_add_velocity (FluidSurface *surface,
 }
 
 void
-add_flow (FluidSurface *surface,
-	        double        amountX,
-	        double        amountY)
+f_surface_set_velocity (FluidSurface *surface,
+                        int           x,
+                        int           y,
+                        double        amountX,
+                        double        amountY)
+{
+  int index = ix(x, y);
+
+  surface->Vx[index] = amountX;
+  surface->Vy[index] = amountY;
+}
+
+void
+f_surface_add_flow (FluidSurface *surface,
+	                  double        amountX,
+	                  double        amountY)
 {
   for (int i = 0; i < surface->size; i++)
     {
@@ -319,6 +341,19 @@ f_surface_add_whirl (FluidSurface *surface,
 	        if (s != 0)
 	          f_surface_add_velocity (surface, j, i, -i / s * vector_scale, j / s * vector_scale);
 	      }
+    }
+}
+
+void
+f_surface_clear (FluidSurface *surface)
+{
+  for (int i = 0; i < surface->size; i++)
+    {
+      for (int j = 0; j < surface->size; j++)
+	      {
+          f_surface_set_density (surface, j, i, 0);
+          f_surface_set_velocity (surface, j, i, 0, 0);
+        }
     }
 }
 

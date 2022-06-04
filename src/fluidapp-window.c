@@ -33,6 +33,7 @@ struct _FluidappWindow
   GtkPicture          *scene;
   GdkPixbuf           *pixbuf;
   GtkToggleButton     *play_button;
+  GtkButton           *reset_button;
   GtkButton           *save_button;
   GtkColorButton      *color_button;
   GtkSwitch           *overdrive;
@@ -56,6 +57,7 @@ fluidapp_window_class_init (FluidappWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, header_bar);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, scene);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, play_button);
+  gtk_widget_class_bind_template_child (widget_class, FluidappWindow, reset_button);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, save_button);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, color_button);
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, overdrive);
@@ -65,7 +67,7 @@ fluidapp_window_class_init (FluidappWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, FluidappWindow, ink_density);
 }
 
-inline static int
+static inline int
 to_original (double original_expansion,
              double actual_expansion,
              double actual_position)
@@ -74,7 +76,7 @@ to_original (double original_expansion,
         / (actual_expansion / original_expansion));
 }
 
-inline static int
+static inline int
 to_orig_x (double original_width,
            double actual_width,
            double actual_x)
@@ -84,7 +86,7 @@ to_orig_x (double original_width,
                       actual_x);
 }
 
-inline static int
+static inline int
 to_orig_y (double original_height,
            double actual_height,
            double actual_y)
@@ -92,14 +94,6 @@ to_orig_y (double original_height,
   return to_original (original_height,
                       actual_height,
                       actual_y);
-}
-
-static void
-set_color (GtkColorButton *button,
-           gpointer        data)
-{
-  FluidappWindow *self = (FluidappWindow*) data;
-  gtk_color_chooser_get_rgba (GTK_COLOR_CHOOSER (button), self->color);
 }
 
 static void
@@ -325,12 +319,28 @@ tick_destroy_notify (gpointer data)
 }
 
 static void
+set_color (GtkColorButton *button,
+           gpointer        data)
+{
+  FluidappWindow *self = (FluidappWindow*) data;
+  gtk_color_chooser_get_rgba (GTK_COLOR_CHOOSER (button), self->color);
+}
+
+static void
 play_toggle (GtkToggleButton *button)
 {
   if (gtk_toggle_button_get_active (button))
     gtk_button_set_icon_name (GTK_BUTTON (button), "media-playback-pause");
   else
     gtk_button_set_icon_name (GTK_BUTTON (button), "media-playback-start");
+}
+
+static void
+reset_field (GtkButton *button,
+             gpointer   user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+  f_surface_clear (self->state->fluid);
 }
 
 static gboolean
@@ -469,6 +479,10 @@ fluidapp_window_init (FluidappWindow *self)
   g_signal_connect (self->play_button,
                     "toggled",
                     G_CALLBACK (play_toggle),
+                    self);
+  g_signal_connect (self->reset_button,
+                    "clicked",
+                    G_CALLBACK (reset_field),
                     self);
   g_signal_connect (self->save_button,
                     "clicked",

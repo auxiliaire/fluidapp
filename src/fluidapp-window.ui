@@ -180,6 +180,7 @@
             </style>
           </object>
         </property>
+        <!-- PLAY BUTTON -->
         <child type="start">
           <object class="GtkToggleButton" id="play_button">
             <property name="icon-name">media-playback-start</property>
@@ -189,6 +190,16 @@
             <property name="tooltip-text" translatable="1">Start/pause simulation</property>
           </object>
         </child>
+        <!-- RESET BUTTON -->
+        <child type="start">
+          <object class="GtkButton" id="reset_button">
+            <property name="icon-name">view-refresh</property>
+            <property name="focusable">1</property>
+            <property name="receives-default">1</property>
+            <property name="tooltip-text" translatable="1">Reset field</property>
+          </object>
+        </child>
+        <!-- SAVE BUTTON -->
         <child type="start">
           <object class="GtkButton" id="save_button">
             <property name="icon-name">document-save</property>

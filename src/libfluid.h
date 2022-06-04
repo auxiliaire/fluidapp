@@ -23,17 +23,30 @@ double        f_surface_get_density  (FluidSurface *surface,
 		                                  int           x,
 		                                  int           y);
 
+void          f_surface_set_density  (FluidSurface *surface,
+		                                  int           x,
+		                                  int           y,
+                                      double        amount);
+
 void          f_surface_add_velocity (FluidSurface *surface,
 			                                int           x,
 			                                int           y,
 			                                double        amountX,
 			                                double        amountY);
 
-void          add_flow               (FluidSurface *surface,
+void          f_surface_set_velocity (FluidSurface *surface,
+			                                int           x,
+			                                int           y,
+			                                double        amountX,
+			                                double        amountY);
+
+void          f_surface_add_flow     (FluidSurface *surface,
 	                                    double        amountX,
 	                                    double        amountY);
 
 void          f_surface_add_whirl    (FluidSurface *surface,
 		                                  double        vector_scale);
+
+void          f_surface_clear        (FluidSurface *surface);
 
 #endif
