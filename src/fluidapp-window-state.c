@@ -76,15 +76,16 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
               if ((modifier == 1) || (modifier == 2))
                 f_surface_add_density (state->fluid, centerX + j, centerY + i, density);
 	            // FluidSurfaceAddVelocity(fluid, cx + j, cy + i, cos(angle) * vector_scale, sin(angle) * vector_scale);
-	            s = sqrt(j * j + i * i);
-	            if (s > 0)
-		            {
-                  if ((modifier == 1) || (modifier == 3))
-	                  f_surface_add_velocity (state->fluid,
-					                                  centerX + j,
-					                                  centerY + i,
-					                                  j / s * state->vector_scale * intensity, // -i / s * state->vector_scale,
-					                                  i / s * state->vector_scale * intensity);  // j / s * state->vector_scale);
+              if ((modifier == 1) || (modifier == 3))
+                {
+                  // Velocity function
+	                s = sqrt(j * j + i * i);
+	                if (s > 0)
+                    f_surface_add_velocity (state->fluid,
+			                                      centerX + j,
+			                                      centerY + i,
+			                                      j / s * state->vector_scale * intensity, // -i / s * state->vector_scale * intensity,
+			                                      i / s * state->vector_scale * intensity);  // j / s * state->vector_scale * intensity);
                 }
 	          }
 	      }
