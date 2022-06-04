@@ -179,14 +179,7 @@
                     <items>
                       <item translatable="yes" id="0">Radial</item>
                       <item translatable="yes" id="1">Spiral</item>
-                      <item translatable="yes" id="2">North</item>
-                      <item translatable="yes" id="3">North-East</item>
-                      <item translatable="yes" id="4">East</item>
-                      <item translatable="yes" id="5">South-East</item>
-                      <item translatable="yes" id="6">South</item>
-                      <item translatable="yes" id="7">South-West</item>
-                      <item translatable="yes" id="8">West</item>
-                      <item translatable="yes" id="9">North-West</item>
+                      <item translatable="yes" id="2">Directional</item>
                     </items>
                   </object>
                 </child>

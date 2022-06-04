@@ -2,7 +2,9 @@
 
 #define F_VELOCITY_FUNCTION_H
 
-#define F_VELOCITY_RADIAL_FN 0
+#define F_VELOCITY_RADIAL_FN      0
+#define F_VELOCITY_SPIRAL_FN      1
+#define F_VELOCITY_DIRECTIONAL_FN 2
 
 typedef struct {
   int    pos_x;

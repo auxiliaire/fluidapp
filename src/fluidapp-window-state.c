@@ -19,6 +19,7 @@ FluidappWindowState* fluidapp_window_state_create ()
   state->fluid        = f_surface_create (state->dimension,
                                           state->diffusion,
                                           state->viscosity);
+  state->velocity_function_selector = F_VELOCITY_RADIAL_FN;
   state->velocity_function = get_velocity_function (F_VELOCITY_RADIAL_FN);
   return state;
 }

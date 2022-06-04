@@ -31,6 +31,7 @@ struct _FluidappWindow
   /* Template widgets */
   GtkHeaderBar        *header_bar;
   GtkPicture          *scene;
+  GdkCursor           *cursor;
   GdkPixbuf           *pixbuf;
   GtkToggleButton     *play_button;
   GtkButton           *reset_button;
@@ -378,6 +379,33 @@ vector_scale_change (GtkRange* range,
   self->state->vector_scale = gtk_adjustment_get_value (adjustment);
 }
 
+static gchar*
+get_cursor_name_from_direction (int direction)
+{
+  switch (direction)
+    {
+    case 2:
+      return "n-resize";
+    case 3:
+      return "ne-resize";
+    case 4:
+      return "e-resize";
+    case 5:
+      return "se-resize";
+    case 6:
+      return "s-resize";
+    case 7:
+      return "sw-resize";
+    case 8:
+      return "w-resize";
+    case 9:
+      return "nw-resize";
+    default:
+      return "default";
+    }
+
+}
+
 static void
 velocity_function_change (GtkComboBoxText* combo_box,
                           gpointer         user_data)
@@ -385,9 +413,18 @@ velocity_function_change (GtkComboBoxText* combo_box,
   FluidappWindow *self = (FluidappWindow*) user_data;
   const gchar *selection = gtk_combo_box_get_active_id (GTK_COMBO_BOX (combo_box));
   char *ptr;
-  VelocityFunction fn = get_velocity_function (strtol (selection, &ptr, 10));
-  if (fn != NULL)
-    self->state->velocity_function = fn;
+  self->state->velocity_function_selector = strtol (selection, &ptr, 10);
+  if (self->state->velocity_function_selector < F_VELOCITY_DIRECTIONAL_FN)
+    {
+      VelocityFunction fn = get_velocity_function (self->state->velocity_function_selector);
+      if (fn != NULL && self->state->velocity_function != fn)
+        {
+          self->state->velocity_function = fn;
+          g_object_unref (self->cursor);
+          self->cursor = gdk_cursor_new_from_name (get_cursor_name_from_direction (self->state->velocity_function_selector), NULL);
+          gtk_widget_set_cursor (GTK_WIDGET (self->scene), self->cursor);
+        }
+    }
 }
 
 static void
@@ -452,6 +489,29 @@ create_save_dialog (GtkButton *button,
   gtk_native_dialog_show (GTK_NATIVE_DIALOG (native));
 }
 
+static gboolean
+handle_scroll (GtkEventControllerScroll* scroll,
+               gdouble                   dx,
+               gdouble                   dy,
+               gpointer                  user_data)
+{
+  FluidappWindow *self = (FluidappWindow*) user_data;
+  if (self->state->velocity_function_selector >= F_VELOCITY_DIRECTIONAL_FN)
+    {
+      int direction = self->state->velocity_function_selector
+                        - F_VELOCITY_DIRECTIONAL_FN + (int)dy;
+      if (direction < 0)
+        direction = 8 + direction;
+      self->state->velocity_function_selector = direction % 8
+                                                  + F_VELOCITY_DIRECTIONAL_FN;
+      self->state->velocity_function = get_velocity_function (self->state->velocity_function_selector);
+      g_object_unref (self->cursor);
+      self->cursor = gdk_cursor_new_from_name (get_cursor_name_from_direction (self->state->velocity_function_selector), NULL);
+      gtk_widget_set_cursor (GTK_WIDGET (self->scene), self->cursor);
+    }
+  return TRUE;
+}
+
 static void
 fluidapp_window_init (FluidappWindow *self)
 {
@@ -464,6 +524,7 @@ fluidapp_window_init (FluidappWindow *self)
 
   self->as_color = capped_color;
 
+  GtkEventController *scroll;
   GtkGesture *drag;
   gtk_widget_init_template (GTK_WIDGET (self));
   self->state  = fluidapp_window_state_create ();
@@ -476,15 +537,21 @@ fluidapp_window_init (FluidappWindow *self)
 
   gtk_picture_set_pixbuf (self->scene, self->pixbuf);
 
+  self->cursor = gdk_cursor_new_from_name ("default", NULL);
+  gtk_widget_set_cursor (GTK_WIDGET (self->scene), self->cursor);
+
   gtk_widget_add_tick_callback (GTK_WIDGET (self->scene),
                                 tick,
                                 self,
                                 tick_destroy_notify);
 
+  scroll = gtk_event_controller_scroll_new (GTK_EVENT_CONTROLLER_SCROLL_VERTICAL
+                                            | GTK_EVENT_CONTROLLER_SCROLL_DISCRETE);
   drag = gtk_gesture_drag_new ();
   gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (drag), 0);
   gtk_widget_add_controller (GTK_WIDGET (self->scene),
                              GTK_EVENT_CONTROLLER (drag));
+  gtk_widget_add_controller (GTK_WIDGET (self->scene), scroll);
 
   g_signal_connect (self->color_button,
                     "color-set",
@@ -517,6 +584,10 @@ fluidapp_window_init (FluidappWindow *self)
   g_signal_connect (self->velocity_function,
                     "changed",
                     G_CALLBACK (velocity_function_change),
+                    self);
+  g_signal_connect (scroll,
+                    "scroll",
+                    G_CALLBACK (handle_scroll),
                     self);
   g_signal_connect (drag,
 			              "drag-begin",

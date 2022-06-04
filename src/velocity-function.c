@@ -124,11 +124,11 @@ northwest_function (VelocityParam param)
 VelocityFunction
 get_velocity_function (int selector)
 {
-  if (selector == 0)
+  if (selector == F_VELOCITY_RADIAL_FN)
     return radial_function;
-  else if (selector == 1)
+  else if (selector == F_VELOCITY_SPIRAL_FN)
     return spiral_function;
-  else if (selector == 2)
+  else if (selector == F_VELOCITY_DIRECTIONAL_FN) /* the rest */
     return north_function;
   else if (selector == 3)
     return northeast_function;
