@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="FluidappWindow" parent="GtkApplicationWindow">
     <property name="default-width">600</property>
@@ -38,9 +39,11 @@
             <!-- INK COLOR -->
             <child>
               <object class="GtkBox">
-                <property name="homogeneous">1</property>
+                <property name="hexpand">1</property>
+                <property name="homogeneous">0</property>
                 <child>
                   <object class="GtkLabel">
+                    <property name="hexpand">1</property>
                     <property name="label" translatable="yes">Ink color</property>
                     <property name="xalign">0.0</property>
                   </object>
@@ -57,9 +60,11 @@
             <!-- COLOR OVERDRIVE -->
             <child>
               <object class="GtkBox">
-                <property name="homogeneous">1</property>
+                <property name="hexpand">1</property>
+                <property name="homogeneous">0</property>
                 <child>
                   <object class="GtkLabel">
+                    <property name="hexpand">1</property>
                     <property name="label" translatable="yes">Color overdrive</property>
                     <property name="xalign">0.0</property>
                   </object>
@@ -75,9 +80,11 @@
             <!-- AUTOINK -->
             <child>
               <object class="GtkBox">
-                <property name="homogeneous">1</property>
+                <property name="hexpand">1</property>
+                <property name="homogeneous">0</property>
                 <child>
                   <object class="GtkLabel">
+                    <property name="hexpand">1</property>
                     <property name="label" translatable="yes">Autoink</property>
                     <property name="xalign">0.0</property>
                   </object>
