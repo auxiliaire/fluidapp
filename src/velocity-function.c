@@ -7,8 +7,8 @@ VectorComponent
 radial_function (VelocityParam param)
 {
   double s = sqrt(param.pos_x * param.pos_x + param.pos_y * param.pos_y);
-  VectorComponent v = { };
-	if (s > 0)
+  VectorComponent v = { .valid = 0, .x = .0, .y = .0 };
+  if (s > 0)
     {
       v.valid = 1;
       v.x     = param.pos_x / s * param.scale * param.intensity;
@@ -21,8 +21,8 @@ VectorComponent
 spiral_function (VelocityParam param)
 {
   double s = sqrt(param.pos_x * param.pos_x + param.pos_y * param.pos_y);
-  VectorComponent v = { };
-	if (s > 0)
+  VectorComponent v = { .valid = 0, .x = .0, .y = .0 };
+  if (s > 0)
     {
       v.valid =  1;
       v.x     = -param.pos_y / s * param.scale * param.intensity;

@@ -1,8 +1,9 @@
 project('fluidapp', 'c',
           version: '0.1.0',
-    meson_version: '>= 0.50.0',
-  default_options: [ 'warning_level=2',
-                     'c_std=gnu17',
+    meson_version: '>= 0.59.4',
+  default_options: [ 'warning_level=3',
+                     'c_std=gnu2x',
+                     'optimization=3',
                    ],
 )
 
@@ -17,8 +18,9 @@ configure_file(
   configuration: config_h,
 )
 add_project_arguments([
-  '-I' + meson.build_root(),
-  '-O3',
+  '-I' + meson.project_build_root(),
+  '-W',
+  '-Wpedantic',
   '-ffast-math',
   '-march=native',
 ], language: 'c')
