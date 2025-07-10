@@ -16,7 +16,7 @@ FluidappWindowState* fluidapp_window_state_create ()
   state->vector_scale = DEFAULT_VECTOR_SCALE;
   state->t            = 0;
   state->time_factor  = DEFAULT_TIME_FACTOR;
-  state->fluid        = f_surface_create (state->dimension,
+  state->fluid        = f_surface_create ((int)state->dimension,
                                           state->diffusion,
                                           state->viscosity);
   state->velocity_function_selector = F_VELOCITY_RADIAL_FN;
@@ -40,11 +40,11 @@ is_point_in_circle (int x,
 }
 
 void
-fluidapp_window_state_add_drop (FluidappWindowState *state,
-                                int                  centerX,
-                                int                  centerY,
-                                int                  density_hint,
-                                guint                modifier)
+fluidapp_window_state_add_drop (FluidappWindowState const *state,
+                                const int                  centerX,
+                                const int                  centerY,
+                                const int                  density_hint,
+                                const guint                modifier)
 {
   // cx = (int) (dimension / 2.0);
   // cy = (int) (dimension / 2.0); // - 10; // (int) (dimension / 2.0);
@@ -71,12 +71,15 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
           // g_printf ("%d, %d\n", cx+i, cy+j);
           if (is_point_in_circle(j, i, 10))
 	          {
-              density = ((rand() % span) + lower) / 100.0;
+              density = 1.0; // ((rand() % span) + lower) / 1000.0;
               // g_print ("density = %f\n", density);
               intensity = density / (upper / 100.0);
               // g_print ("intensity = %f\n", intensity);
-              if ((modifier == 1) || (modifier == 2))
-                f_surface_add_density (state->fluid, centerX + j, centerY + i, density);
+              if ((modifier == GDK_BUTTON_PRIMARY) || (modifier == GDK_BUTTON_MIDDLE))
+                f_surface_set_density (state->fluid, centerX + j, centerY + i, density);
+          		// f_surface_add_density (state->fluid, centerX + j, centerY + i, density);
+          	  else
+          	  	f_surface_set_density (state->fluid, centerX + j, centerY + i, 0.0);
 	            // FluidSurfaceAddVelocity(fluid, cx + j, cy + i, cos(angle) * vector_scale, sin(angle) * vector_scale);
               VelocityParam p = {
                   .pos_x = j,
@@ -84,8 +87,8 @@ fluidapp_window_state_add_drop (FluidappWindowState *state,
                   .scale = state->vector_scale,
                   .intensity = intensity
                 };
-              VectorComponent v = state->velocity_function (p);
-              if (((modifier == 1) || (modifier == 3)) && v.valid)
+              const VectorComponent v = state->velocity_function (p);
+              if (((modifier == GDK_BUTTON_PRIMARY) || (modifier == GDK_BUTTON_SECONDARY)) && v.valid)
                 f_surface_add_velocity (state->fluid,
 	                                      centerX + j,
 	                                      centerY + i,

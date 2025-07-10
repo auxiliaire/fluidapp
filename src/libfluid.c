@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct _FluidSurface {
@@ -22,8 +23,8 @@ typedef struct _FluidSurface {
 static int FluidSurfaceDimension;
 
 static inline int
-ix (int x,
-    int y)
+ix (const int x,
+    const int y)
 {
     return (x + y * (FluidSurfaceDimension + 2));
 }
@@ -94,14 +95,14 @@ set_bnd (int     b,
 
 static void
 lin_solve (int     b,
-	         double *x,
-	         double *x0,
-	         double  a,
-	         double  c,
-	         int     iter,
-	         int     N)
+	         double       *x,
+	         double const *x0,
+	         const double  a,
+	         const double  c,
+	         int           iter,
+	         const int     N)
 {
-  double cRecip = 1.0 / c;
+  const double cRecip = 1.0 / c;
   for (int k = 0; k < iter; k++) {
       for (int j = 1; j < N - 1; j++) {
           for (int i = 1; i < N - 1; i++) {
@@ -119,66 +120,64 @@ lin_solve (int     b,
 }
 
 static void
-diffuse (int     b,
-	       double *x,
-	       double *x0,
-	       double  diff,
-	       double  dt,
-	       int     iter,
-	       int     N)
+diffuse (const int     b,
+         double       *x,
+         double const *x0,
+         const double  diff,
+         const double  dt,
+         int           iter,
+         const int     N)
 {
   double a = dt * diff * (N - 2) * (N - 2);
   lin_solve (b, x, x0, a, 1 + 6 * a, iter, N);
 }
 
 static void
-advect (int     b,
-	      double *d,
-	      double *d0,
-	      double *velocX,
-	      double *velocY,
-	      double  dt,
-	      int     N)
+advect (const int     b,
+        double       *d,
+        double const *d0,
+        double const *velocX,
+        double const *velocY,
+        const double  dt,
+        const int     N)
 {
-  double i0, i1, j0, j1;
-
-  double dtx = dt * (N - 2);
-  double dty = dt * (N - 2);
-
-  double s0, s1, t0, t1;
-  double tmp1, tmp2, x, y;
+  const double dtx = dt * (N - 2);
+  const double dty = dt * (N - 2);
 
   double Ndouble = N;
-  double idouble, jdouble;
-  int i, j;
+  double idouble;
+  double jdouble;
+  int i;
+  int j;
 
   for (j = 1, jdouble = 1; j < N - 1; j++, jdouble++)
     {
       for (i = 1, idouble = 1; i < N - 1; i++, idouble++)
         {
-          tmp1 = dtx * velocX[ix(i, j)];
-          tmp2 = dty * velocY[ix(i, j)];
-          x    = idouble - tmp1;
-          y    = jdouble - tmp2;
+          const double tmp1 = dtx * velocX[ix(i, j)];
+          const double tmp2 = dty * velocY[ix(i, j)];
+          double x = idouble - tmp1;
+          double y = jdouble - tmp2;
 
           if (x < 0.5f) x = 0.5f;
           if (x > Ndouble + 0.5f) x = Ndouble + 0.5f;
-          i0 = floorf(x);
-          i1 = i0 + 1.0f;
+          const double i0 = floor(x);
+          const double i1 = i0 + 1.0f;
           if (y < 0.5f) y = 0.5f;
           if (y > Ndouble + 0.5f) y = Ndouble + 0.5f;
-          j0 = floorf(y);
-          j1 = j0 + 1.0f;
+          const double j0 = floor(y);
+          const double j1 = j0 + 1.0f;
 
-          s1 = x - i0;
-          s0 = 1.0f - s1;
-          t1 = y - j0;
-          t0 = 1.0f - t1;
+          const double s1 = x - i0;
+          const double s0 = 1.0f - s1;
+          const double t1 = y - j0;
+          const double t0 = 1.0f - t1;
 
-          int i0i = i0;
-          int i1i = i1;
-          int j0i = j0;
-          int j1i = j1;
+          // TODO: range check these
+          const int i0i = (int)i0;
+          const int i1i = (int)i1;
+          const int j0i = (int)j0;
+          const int j1i = (int)j1;
 
           d[ix(i, j)] =
 
@@ -192,12 +191,12 @@ advect (int     b,
 }
 
 static void
-project (double *velocX,
-	       double *velocY,
-	       double *p,
-	       double *div,
-	       int     iter,
-	       int     N)
+project (double   *velocX,
+	       double   *velocY,
+	       double   *p,
+	       double   *div,
+	       int       iter,
+	       const int N)
 {
   for (int j = 1; j < N - 1; j++)
     {
@@ -231,11 +230,11 @@ project (double *velocX,
 }
 
 void
-f_surface_step (FluidSurface *surface, double dt)
+f_surface_step (const FluidSurface *surface, const double dt)
 {
-  int N           = surface->size;
-  double visc     = surface->visc;
-  double diff     = surface->diff;
+  const int N           = surface->size;
+  const double visc     = surface->visc;
+  const double diff     = surface->diff;
   double *Vx      = surface->Vx;
   double *Vy      = surface->Vy;
   double *Vx0     = surface->Vx0;
@@ -258,42 +257,44 @@ f_surface_step (FluidSurface *surface, double dt)
 }
 
 void
-f_surface_add_density (FluidSurface *surface,
-		                   int           x,
-		                   int           y,
-		                   double        amount)
+f_surface_add_density (const FluidSurface *surface,
+		                   const int           x,
+		                   const int           y,
+		                   const double        amount)
 {
   assert (amount >= 0.0 && amount <= 1.0 && "density should be between 0.0 and 1.0");
   double density = surface->density[ix(x, y)] + amount;
-  if (density <= 1.0)
-    surface->density[ix(x, y)] = density;
-  // else
-    // printf ("Density overflow (%f)\n", density);
+  if (density > 1.0)
+    {
+      fprintf(stderr, "Warning: density overflow, clamping to 1.0\n");
+      density = 1.0;
+    }
+  surface->density[ix(x, y)] = density;
 }
 
 double
-f_surface_get_density (FluidSurface *surface,
-		                   int           x,
-		                   int           y)
+f_surface_get_density (FluidSurface const *surface,
+                       const int           x,
+                       const int           y)
 {
   return surface->density[ix(x, y)];
 }
 
 void
-f_surface_set_density (FluidSurface *surface,
-		                   int           x,
-		                   int           y,
-                       double        amount)
+f_surface_set_density (const FluidSurface *surface,
+		                   const int           x,
+		                   const int           y,
+                       const double        amount)
 {
   surface->density[ix(x, y)] = amount;
 }
 
 void
-f_surface_add_velocity (FluidSurface *surface,
-			                  int           x,
-			                  int           y,
-			                  double        amountX,
-			                  double        amountY)
+f_surface_add_velocity (const FluidSurface *surface,
+			                  const int           x,
+			                  const int           y,
+			                  const double        amountX,
+			                  const double        amountY)
 {
   int index = ix(x, y);
 
@@ -302,22 +303,22 @@ f_surface_add_velocity (FluidSurface *surface,
 }
 
 void
-f_surface_set_velocity (FluidSurface *surface,
-                        int           x,
-                        int           y,
-                        double        amountX,
-                        double        amountY)
+f_surface_set_velocity (const FluidSurface *surface,
+                        const int           x,
+                        const int           y,
+                        const double        amountX,
+                        const double        amountY)
 {
-  int index = ix(x, y);
+  const int index = ix(x, y);
 
   surface->Vx[index] = amountX;
   surface->Vy[index] = amountY;
 }
 
 void
-f_surface_add_flow (FluidSurface *surface,
-	                  double        amountX,
-	                  double        amountY)
+f_surface_add_flow (FluidSurface const *surface,
+	                  const double        amountX,
+	                  const double        amountY)
 {
   for (int i = 0; i < surface->size; i++)
     {
@@ -329,8 +330,8 @@ f_surface_add_flow (FluidSurface *surface,
 }
 
 void
-f_surface_add_whirl (FluidSurface *surface,
-		                 double        vector_scale)
+f_surface_add_whirl (FluidSurface const *surface,
+		                 const double        vector_scale)
 {
   double s;
   for (int i = 0; i < surface->size; i ++)
@@ -345,7 +346,7 @@ f_surface_add_whirl (FluidSurface *surface,
 }
 
 void
-f_surface_clear (FluidSurface *surface)
+f_surface_clear (FluidSurface const *surface)
 {
   for (int i = 0; i < surface->size; i++)
     {

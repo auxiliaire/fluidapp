@@ -170,20 +170,20 @@ put_pixel (GdkPixbuf *pixbuf,
   g_assert (gdk_pixbuf_get_has_alpha (pixbuf));
   g_assert (n_channels == 4);
 
-  int width = gdk_pixbuf_get_width (pixbuf);
-  int height = gdk_pixbuf_get_height (pixbuf);
+  const int width = gdk_pixbuf_get_width (pixbuf);
+  const int height = gdk_pixbuf_get_height (pixbuf);
 
   // Ensure that the coordinates are in a valid range
   g_assert (x >= 0 && x < width);
   g_assert (y >= 0 && y < height);
 
-  int rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+  const int rowStride = gdk_pixbuf_get_rowstride (pixbuf);
 
   // The pixel buffer in the GdkPixbuf instance
   guchar *pixels = gdk_pixbuf_get_pixels (pixbuf);
 
   // The pixel we wish to modify
-  guchar *p = pixels + y * rowstride + x * n_channels;
+  guchar *p = pixels + y * rowStride + x * n_channels;
   p[0] = red;
   p[1] = green;
   p[2] = blue;
@@ -211,11 +211,11 @@ render (FluidappWindow *self)
   // int n_channels = gdk_pixbuf_get_n_channels (pixbuf_new);
   // guchar *pixels = gdk_pixbuf_get_pixels (pixbuf_new);
 
-  for (guint i = 0; i < self->state->dimension; i++)
+  for (int i = 0; i < self->state->dimension; i++)
     {
-      for (guint j = 0; j < self->state->dimension; j++)
+      for (int j = 0; j < self->state->dimension; j++)
         {
-	        double d = f_surface_get_density (self->state->fluid, j, i);
+	        const double d = f_surface_get_density (self->state->fluid, j, i);
 	        //if (d > 500) {
 	        //	g_print ("d = %f\n", d);
 	        //}
@@ -380,7 +380,7 @@ vector_scale_change (GtkRange* range,
 }
 
 static gchar*
-get_cursor_name_from_direction (int direction)
+get_cursor_name_from_direction (const int direction)
 {
   switch (direction)
     {
@@ -432,7 +432,7 @@ on_save_response (GtkNativeDialog *native,
                   int        response,
                   gpointer   user_data)
 {
-  FluidappWindow *self = (FluidappWindow*) user_data;
+  FluidappWindow *self = user_data;
 
   if (response == GTK_RESPONSE_ACCEPT)
     {
@@ -446,15 +446,16 @@ on_save_response (GtkNativeDialog *native,
       if (error == NULL)
         {
           // save_to_file (file);
-          gdk_pixbuf_save_to_stream (self->pixbuf, G_OUTPUT_STREAM (out), "jpeg", NULL, &error, "quality", "100", NULL);
-          if (error != NULL)
+          const gboolean success = gdk_pixbuf_save_to_stream (self->pixbuf,
+                                                              G_OUTPUT_STREAM (out),
+                                                              "jpeg", NULL, &error, "quality", "100", NULL);
+          if (!success && error != NULL)
             {
               g_print ("%s\n", error->message);
               g_error_free (error);
             }
         }
       g_object_unref (G_OBJECT (out));
-      g_object_unref (G_OBJECT (file));
     }
 
   g_object_unref (native);
@@ -524,8 +525,6 @@ fluidapp_window_init (FluidappWindow *self)
 
   self->as_color = capped_color;
 
-  GtkEventController *scroll;
-  GtkGesture *drag;
   gtk_widget_init_template (GTK_WIDGET (self));
   self->state  = fluidapp_window_state_create ();
   self->pixbuf = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
@@ -545,13 +544,15 @@ fluidapp_window_init (FluidappWindow *self)
                                 self,
                                 tick_destroy_notify);
 
-  scroll = gtk_event_controller_scroll_new (GTK_EVENT_CONTROLLER_SCROLL_VERTICAL
-                                            | GTK_EVENT_CONTROLLER_SCROLL_DISCRETE);
-  drag = gtk_gesture_drag_new ();
+  GtkEventController* scroll = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL
+    | GTK_EVENT_CONTROLLER_SCROLL_DISCRETE);
+  GtkGesture* drag = gtk_gesture_drag_new();
   gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (drag), 0);
   gtk_widget_add_controller (GTK_WIDGET (self->scene),
                              GTK_EVENT_CONTROLLER (drag));
   gtk_widget_add_controller (GTK_WIDGET (self->scene), scroll);
+
+  gtk_combo_box_set_active_id (GTK_COMBO_BOX (self->velocity_function), "1");
 
   g_signal_connect (self->color_button,
                     "color-set",

@@ -182,11 +182,11 @@
                 <child>
                   <object class="GtkComboBoxText" id="velocity_function">
                     <property name="hexpand">1</property>
-                    <property name="active-id">0</property>
+                    <property name="active-id">1</property>
                     <items>
-                      <item translatable="yes" id="0">Radial</item>
-                      <item translatable="yes" id="1">Spiral</item>
-                      <item translatable="yes" id="2">Directional</item>
+                      <item translatable="yes" id="1">Radial</item>
+                      <item translatable="yes" id="2">Spiral</item>
+                      <item translatable="yes" id="3">Directional</item>
                     </items>
                   </object>
                 </child>

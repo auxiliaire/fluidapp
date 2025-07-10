@@ -45,11 +45,11 @@ typedef struct _FluidappWindowState
 FluidappWindowState* fluidapp_window_state_create   ();
 void                 fluidapp_window_state_free     (FluidappWindowState *state);
 
-void                 fluidapp_window_state_add_drop (FluidappWindowState *state,
-                                                     int                  centerX,
-                                                     int                  centerY,
-                                                     int                  density_hint,
-                                                     guint                modifier);
+void                 fluidapp_window_state_add_drop (FluidappWindowState const *state,
+                                                     int                        centerX,
+                                                     int                        centerY,
+                                                     int                        density_hint,
+                                                     guint                      modifier);
 
 G_END_DECLS
 
