@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <math.h>
 
 #include "velocity-function.h"
@@ -122,29 +121,28 @@ northwest_function (VelocityParam param)
 }
 
 VelocityFunction
-get_velocity_function (int selector)
+get_velocity_function (const guint selector)
 {
   if (selector == F_VELOCITY_RADIAL_FN)
     return radial_function;
-  else if (selector == F_VELOCITY_SPIRAL_FN)
+  if (selector == F_VELOCITY_SPIRAL_FN)
     return spiral_function;
-  else if (selector == F_VELOCITY_DIRECTIONAL_FN) /* the rest */
+  if (selector == F_VELOCITY_DIRECTIONAL_FN) /* the rest */
     return north_function;
-  else if (selector == 3)
+  if (selector == 4)
     return northeast_function;
-  else if (selector == 4)
+  if (selector == 5)
     return east_function;
-  else if (selector == 5)
+  if (selector == 6)
     return southeast_function;
-  else if (selector == 6)
+  if (selector == 7)
     return south_function;
-  else if (selector == 7)
+  if (selector == 8)
     return southwest_function;
-  else if (selector == 8)
+  if (selector == 9)
     return west_function;
-  else if (selector == 9)
+  if (selector == 10)
     return northwest_function;
-  else
-    return NULL;
+  return nullptr;
 }
 

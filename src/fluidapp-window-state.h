@@ -38,7 +38,7 @@ typedef struct _FluidappWindowState
   double              dt;
   double              px;
   double              py;
-  int                 velocity_function_selector;
+  guint               velocity_function_selector;
   VelocityFunction    velocity_function;
 } FluidappWindowState;
 

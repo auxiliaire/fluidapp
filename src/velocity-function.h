@@ -2,6 +2,8 @@
 
 #define F_VELOCITY_FUNCTION_H
 
+#include <glib.h>
+
 #define F_VELOCITY_RADIAL_FN      1
 #define F_VELOCITY_SPIRAL_FN      2
 #define F_VELOCITY_DIRECTIONAL_FN 3
@@ -41,7 +43,7 @@ VectorComponent  west_function         (VelocityParam param);
 
 VectorComponent  northwest_function    (VelocityParam param);
 
-VelocityFunction get_velocity_function (int selector);
+VelocityFunction get_velocity_function (guint selector);
 
 #endif
 

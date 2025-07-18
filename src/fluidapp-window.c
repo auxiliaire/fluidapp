@@ -44,7 +44,7 @@ struct _FluidappWindow
   GtkScale            *time_scale;
   GtkScale            *vector_scale;
   GtkScale            *ink_density;
-  GtkComboBoxText     *velocity_function;
+  GtkDropDown         *velocity_function;
   FluidappWindowState *state;
 };
 
@@ -384,21 +384,21 @@ get_cursor_name_from_direction (const int direction)
 {
   switch (direction)
     {
-    case 2:
-      return "n-resize";
     case 3:
-      return "ne-resize";
+      return "n-resize";
     case 4:
-      return "e-resize";
+      return "ne-resize";
     case 5:
-      return "se-resize";
+      return "e-resize";
     case 6:
-      return "s-resize";
+      return "se-resize";
     case 7:
-      return "sw-resize";
+      return "s-resize";
     case 8:
-      return "w-resize";
+      return "sw-resize";
     case 9:
+      return "w-resize";
+    case 10:
       return "nw-resize";
     default:
       return "default";
@@ -407,21 +407,22 @@ get_cursor_name_from_direction (const int direction)
 }
 
 static void
-velocity_function_change (GtkComboBoxText* combo_box,
-                          gpointer         user_data)
+velocity_function_change (GtkDropDown*      dropdown,
+                          const GParamSpec* _pspec,
+                          GtkWindow*        user_data)
 {
-  FluidappWindow *self = (FluidappWindow*) user_data;
-  const gchar *selection = gtk_combo_box_get_active_id (GTK_COMBO_BOX (combo_box));
-  char *ptr;
-  self->state->velocity_function_selector = strtol (selection, &ptr, 10);
-  if (self->state->velocity_function_selector < F_VELOCITY_DIRECTIONAL_FN)
+  (void)_pspec;
+  const auto self = (FluidappWindow*) user_data;
+  self->state->velocity_function_selector = gtk_drop_down_get_selected (GTK_DROP_DOWN (dropdown)) + 1;
+  if (self->state->velocity_function_selector <= F_VELOCITY_DIRECTIONAL_FN)
     {
       VelocityFunction fn = get_velocity_function (self->state->velocity_function_selector);
       if (fn != NULL && self->state->velocity_function != fn)
         {
           self->state->velocity_function = fn;
           g_object_unref (self->cursor);
-          self->cursor = gdk_cursor_new_from_name (get_cursor_name_from_direction (self->state->velocity_function_selector), NULL);
+          self->cursor = gdk_cursor_new_from_name (
+            get_cursor_name_from_direction (self->state->velocity_function_selector), nullptr);
           gtk_widget_set_cursor (GTK_WIDGET (self->scene), self->cursor);
         }
     }
@@ -551,8 +552,7 @@ fluidapp_window_init (FluidappWindow *self)
   gtk_widget_add_controller (GTK_WIDGET (self->scene),
                              GTK_EVENT_CONTROLLER (drag));
   gtk_widget_add_controller (GTK_WIDGET (self->scene), scroll);
-
-  gtk_combo_box_set_active_id (GTK_COMBO_BOX (self->velocity_function), "1");
+  auto velocity_selection_model = gtk_drop_down_get_model (self->velocity_function);
 
   g_signal_connect (self->color_button,
                     "color-set",
@@ -583,7 +583,7 @@ fluidapp_window_init (FluidappWindow *self)
                     G_CALLBACK (vector_scale_change),
                     self);
   g_signal_connect (self->velocity_function,
-                    "changed",
+                    "notify::selected",
                     G_CALLBACK (velocity_function_change),
                     self);
   g_signal_connect (scroll,
